@@ -155,6 +155,19 @@ namespace PSO2_Updater_WinForm.Forms
             }), null);
         }
 
+        private bool TestRequireAdmin(string path)
+        {
+            try
+            {
+                File.Create(Path.Combine(path, DateTime.Now.ToBinary().ToString()), 1, FileOptions.DeleteOnClose).Dispose();
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+        }
+
         private bool pendingCloseForm;
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
@@ -246,6 +259,11 @@ namespace PSO2_Updater_WinForm.Forms
 
         private void StartUpdateGame(string pso2directory)
         {
+            if (this.TestRequireAdmin(pso2directory))
+            {
+                MessageBox.Show(this, "The updater cannot write any files to the destination.\nMaybe the location is require higher privilege.\nPlease try to run the updater as Admin.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
             if (this.checkBox_useCache.Checked && Path.IsPathRooted(this.textBox_cache.Text))
                 this.pso2updatemng.ChecksumCache = Leayal.PSO2.Updater.ChecksumCache.ChecksumCache.OpenFromFile(this.textBox_cache.Text);
             this.pso2updatemng.UpdateGame(pso2directory);
@@ -254,6 +272,11 @@ namespace PSO2_Updater_WinForm.Forms
 
         private void StartCheckLocalFiles(string pso2directory)
         {
+            if (this.TestRequireAdmin(pso2directory))
+            {
+                MessageBox.Show(this, "The updater cannot write any files to the destination.\nMaybe the location is require higher privilege.\nPlease try to run the updater as Admin.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
             if (this.checkBox_useCache.Checked && Path.IsPathRooted(this.textBox_cache.Text))
                 this.pso2updatemng.ChecksumCache = Leayal.PSO2.Updater.ChecksumCache.ChecksumCache.OpenFromFile(this.textBox_cache.Text);
             this.pso2updatemng.CheckLocalFiles(pso2directory);

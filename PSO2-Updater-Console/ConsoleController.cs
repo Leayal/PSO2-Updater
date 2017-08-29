@@ -85,6 +85,22 @@ namespace PSO2_Updater_Console
             else
             {
                 this.pso2directory = Path.GetFullPath(this.pso2directory);
+                if (File.Exists(this.pso2directory))
+                {
+                    this.ConsoleWriteOut("PSO2 Directory can not be a file.", ConsoleColor.Red);
+                    Console.WriteLine("Press any key to close.");
+                    Console.ReadKey();
+                    return false;
+                }
+                else if (this.TestRequireAdmin(this.pso2directory))
+                {
+                    this.ConsoleWriteOut("The updater cannot write any files to the destination.", ConsoleColor.Red);
+                    this.ConsoleWriteOut("Maybe the destination require Admin access.", ConsoleColor.Red);
+                    this.ConsoleWriteOut("Please try to run the updater as Admin.", ConsoleColor.Red);
+                    Console.WriteLine("Press any key to close.");
+                    Console.ReadKey();
+                    return false;
+                }
                 if (!string.IsNullOrWhiteSpace(this.logoutput))
                     this.logoutput = Path.GetFullPath(this.logoutput);
 
@@ -114,6 +130,19 @@ namespace PSO2_Updater_Console
                     this.pso2updatemng.UpdateGame(this.pso2directory);
                 
 
+                return true;
+            }
+        }
+
+        private bool TestRequireAdmin(string path)
+        {
+            try
+            {
+                File.Create(Path.Combine(path, DateTime.Now.ToBinary().ToString()), 1, FileOptions.DeleteOnClose).Dispose();
+                return false;
+            }
+            catch(UnauthorizedAccessException)
+            {
                 return true;
             }
         }
