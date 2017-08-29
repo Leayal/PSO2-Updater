@@ -158,7 +158,8 @@ namespace PSO2_Updater_WinForm.Forms
         private bool pendingCloseForm;
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            this.config.Save();
+            if (!this.config.IsEmpty)
+                this.config.Save();
             if (!this.pso2updatemng.IsBusy)
                 base.OnFormClosing(e);
             else
