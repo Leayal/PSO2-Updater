@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("PSO2-Updater")]
+[assembly: AssemblyTitle("PSO2-Updater-WinForm")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("PSO2-Updater")]
+[assembly: AssemblyProduct("PSO2-Updater-WinForm")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("ecbf7fd9-c925-4062-9522-5c35cb39b02a")]
+[assembly: Guid("e47633c5-62d7-4921-a306-4c29ec858979")]
 
 // Version information for an assembly consists of the following four values:
 //

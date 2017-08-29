@@ -4,16 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{21CD32B6-E659-469D-9595-816F4CCA4ACB}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>PSO2_Updater</RootNamespace>
+    <ProjectGuid>{ECBF7FD9-C925-4062-9522-5C35CB39B02A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Leayal.PSO2.Updater</RootNamespace>
     <AssemblyName>PSO2-Updater</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,55 +23,61 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=1.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.1.2.2\lib\net40\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form1.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
+    <Compile Include="AnotherSmallThreadPool.cs" />
+    <Compile Include="BackgroundWorkerManager.cs" />
+    <Compile Include="ChecksumCache\ChecksumCache.cs" />
+    <Compile Include="ChecksumCache\ChecksumCacheEntry.cs" />
+    <Compile Include="ChecksumCache\ChecksumCacheReader.cs" />
+    <Compile Include="ChecksumCache\ChecksumCacheWriter.cs" />
+    <Compile Include="EventArgs\DetailedProgressChangedEventArgs.cs" />
+    <Compile Include="EventArgs\ExtendedBackgroundWorkerEventArgs.cs" />
+    <Compile Include="EventArgs\KaboomFinishedEventArgs.cs" />
+    <Compile Include="Helpers\CommonMethods.cs" />
+    <Compile Include="Helpers\DefaultValues.cs" />
+    <Compile Include="Enums.cs" />
+    <Compile Include="EventArgs\HandledExceptionEventArgs.cs" />
+    <Compile Include="EventArgs\PrepatchPromptEventArgs.cs" />
+    <Compile Include="EventArgs\ProgressEventArgs.cs" />
+    <Compile Include="ChecksumCache\PSO2FileChecksum.cs" />
+    <Compile Include="Helpers\InstallationMeta.cs" />
+    <Compile Include="MemoryFileCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <None Include="app.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
+    <Compile Include="Helpers\PSO2File.cs" />
+    <Compile Include="EventArgs\PSO2NotifyEventArgs.cs" />
+    <Compile Include="Helpers\PSO2UpdateException.cs" />
+    <Compile Include="PSO2UpdateManager.cs" />
+    <Compile Include="Helpers\PSO2Version.cs" />
+    <Compile Include="Helpers\PSO2VersionCheckResult.cs" />
+    <Compile Include="Helpers\Settings.cs" />
+    <Compile Include="EventArgs\StepEventArgs.cs" />
+    <Compile Include="Helpers\WorkerParams.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.Core\Leayal.Core.csproj">
+      <Project>{3dcd41bd-c295-4bd1-b675-aedc9fcbfa1a}</Project>
+      <Name>Leayal.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
