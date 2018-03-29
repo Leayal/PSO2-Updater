@@ -16,12 +16,18 @@ using System.Collections.ObjectModel;
 
 namespace Leayal.PSO2.Updater
 {
+    /// <summary>
+    /// Provide methods to update or verify the PSO2 game client
+    /// </summary>
     public class ClientUpdater
     {
         private static readonly char[] bangonly = { '=' };
         private static readonly char[] tabonly = { Microsoft.VisualBasic.ControlChars.Tab };
         private HttpClient downloader;
 
+        /// <summary>
+        /// Initialize the class
+        /// </summary>
         public ClientUpdater()
         {
             this.cancelBag = new ConcurrentBag<CancellationTokenSource>();
@@ -88,8 +94,19 @@ namespace Leayal.PSO2.Updater
             }
         }
 
+        /// <summary>
+        /// Get the patch lists from a specific version
+        /// </summary>
+        /// <param name="version">Specific version to determine the patchlist</param>
+        /// <returns></returns>
         public Task<RemotePatchlist> GetPatchlistAsync(ClientVersionCheckResult version) => this.GetPatchlistAsync(version, PatchListType.Master | PatchListType.Patch | PatchListType.LauncherList);
 
+        /// <summary>
+        /// Get the patch list(s) from a specific version
+        /// </summary>
+        /// <param name="version">Specific version to determine the patchlist</param>
+        /// <param name="patchListType">Specify which patch lists will be downloaded</param>
+        /// <returns></returns>
         public async Task<RemotePatchlist> GetPatchlistAsync(ClientVersionCheckResult version, PatchListType patchListType)
         {
             RemotePatchlist result = null;
@@ -183,8 +200,21 @@ namespace Leayal.PSO2.Updater
                 return result;
         }
 
+        /// <summary>
+        /// Download a <seealso cref="PSO2File"/> from the server
+        /// </summary>
+        /// <param name="file">Specify the file</param>
+        /// <param name="outStream">Output stream</param>
+        /// <returns></returns>
         public Task DownloadFileAsync(PSO2File file, Stream outStream) => this.DownloadFileAsync(file, outStream, null);
 
+        /// <summary>
+        /// Download a <seealso cref="PSO2File"/> from the server
+        /// </summary>
+        /// <param name="file">Specify the file</param>
+        /// <param name="outStream">Output stream</param>
+        /// <param name="cancellationTokenSource">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns></returns>
         public async Task DownloadFileAsync(PSO2File file, Stream outStream, CancellationTokenSource cancellationTokenSource)
         {
             if (!outStream.CanWrite)
@@ -229,14 +259,34 @@ namespace Leayal.PSO2.Updater
             }
         }
 
+        /// <summary>
+        /// Shortcut methods for <seealso cref="GetPatchlistAsync(ClientVersionCheckResult)"/> and <seealso cref="VerifyAndDownloadAsync(string, ClientVersionCheckResult, RemotePatchlist, ClientUpdateOptions)"/>
+        /// </summary>
+        /// <param name="clientDirectory">The pso2_dir directory</param>
+        /// <param name="version">Specify the version</param>
+        /// <returns></returns>
         public Task UpdateClientAsync(string clientDirectory, ClientVersionCheckResult version) => this.UpdateClientAsync(clientDirectory, version, new ClientUpdateOptions());
 
+        /// <summary>
+        /// Shortcut methods for <seealso cref="GetPatchlistAsync(ClientVersionCheckResult)"/> and <seealso cref="VerifyAndDownloadAsync(string, ClientVersionCheckResult, RemotePatchlist, ClientUpdateOptions)"/>
+        /// </summary>
+        /// <param name="clientDirectory">The pso2_dir directory</param>
+        /// <param name="version">Specify the version</param>
+        /// <param name="options">Provide the options for current download sessions</param>
+        /// <returns></returns>
         public async Task UpdateClientAsync(string clientDirectory, ClientVersionCheckResult version, ClientUpdateOptions options)
         {
             RemotePatchlist patchlist = await this.GetPatchlistAsync(version);
             this.VerifyAndDownloadAsync(clientDirectory, version, patchlist, options);
         }
 
+        /// <summary>
+        /// Verify and redownload any missing/old files
+        /// </summary>
+        /// <param name="clientDirectory">The pso2_dir directory</param>
+        /// <param name="version">Specify the version</param>
+        /// <param name="filelist">Specify the patchlist to check and download</param>
+        /// <param name="options">Provide the options for current download sessions</param>
         public void VerifyAndDownloadAsync(string clientDirectory, ClientVersionCheckResult version, RemotePatchlist filelist, ClientUpdateOptions options)
         {
             ConcurrentDictionary<PSO2File, Exception> failedfiles = new ConcurrentDictionary<PSO2File, Exception>();
@@ -660,12 +710,24 @@ namespace Leayal.PSO2.Updater
             }
         }
 
+        /// <summary>
+        /// Callback event when the async operation is finished. <seealso cref="VerifyAndDownloadAsync(string, ClientVersionCheckResult, RemotePatchlist, ClientUpdateOptions)"/> will also trigger this event upon complete.
+        /// </summary>
         public event Action<PSO2NotifyEventArgs> UpdateCompleted;
+        /// <summary>
+        /// Callback event to report the progress of the current operation
+        /// </summary>
         public event Action<int, int> ProgressChanged;
+        /// <summary>
+        /// Callback event to report the current step of the current operation
+        /// </summary>
         public event Action<UpdateStep, object> StepChanged;
 
         private ConcurrentBag<CancellationTokenSource> cancelBag;
 
+        /// <summary>
+        /// Cancel all async operations
+        /// </summary>
         public void CancelDownloadOperations()
         {
             while (cancelBag.Count > 0)
