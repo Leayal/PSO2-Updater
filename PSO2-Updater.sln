@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.Core", "Leayal.Core\Leayal.Core.csproj", "{3DCD41BD-C295-4BD1-B675-AEDC9FCBFA1A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSO2-Updater-WinForm", "PSO2-Updater-WinForm\PSO2-Updater-WinForm.csproj", "{E47633C5-62D7-4921-A306-4C29EC858979}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSO2-Updater", "PSO2-Updater\PSO2-Updater.csproj", "{ECBF7FD9-C925-4062-9522-5C35CB39B02A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSO2-Updater-Console", "PSO2-Updater-Console\PSO2-Updater-Console.csproj", "{9E35E0FA-6057-412F-ACBC-F340F35A7FE3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSO2-Updater-WPF", "PSO2-Updater-WPF\PSO2-Updater-WPF.csproj", "{743ECCD2-9A01-4169-A4DF-119D5C2BF893}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,15 +17,12 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3DCD41BD-C295-4BD1-B675-AEDC9FCBFA1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3DCD41BD-C295-4BD1-B675-AEDC9FCBFA1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E47633C5-62D7-4921-A306-4C29EC858979}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E47633C5-62D7-4921-A306-4C29EC858979}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E47633C5-62D7-4921-A306-4C29EC858979}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ECBF7FD9-C925-4062-9522-5C35CB39B02A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ECBF7FD9-C925-4062-9522-5C35CB39B02A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9E35E0FA-6057-412F-ACBC-F340F35A7FE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E35E0FA-6057-412F-ACBC-F340F35A7FE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9E35E0FA-6057-412F-ACBC-F340F35A7FE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9E35E0FA-6057-412F-ACBC-F340F35A7FE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{743ECCD2-9A01-4169-A4DF-119D5C2BF893}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{743ECCD2-9A01-4169-A4DF-119D5C2BF893}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{743ECCD2-9A01-4169-A4DF-119D5C2BF893}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{743ECCD2-9A01-4169-A4DF-119D5C2BF893}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

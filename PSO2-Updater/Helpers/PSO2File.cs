@@ -7,7 +7,7 @@ namespace Leayal.PSO2.Updater
     {
         public static readonly char[] _spaceonly = { ' ' };
         public static readonly char[] _tabonly = { Microsoft.VisualBasic.ControlChars.Tab };
-        public static bool TryParse(string rawdatastring, PSO2VersionCheckResult baseUrl, out PSO2File _pso2file)
+        public static bool TryParse(string rawdatastring, ClientVersionCheckResult baseUrl, out PSO2File _pso2file)
         {
             string[] splitbuffer = null;
             if (rawdatastring.IndexOf(Microsoft.VisualBasic.ControlChars.Tab) > -1)
@@ -18,7 +18,7 @@ namespace Leayal.PSO2.Updater
             {
                 if (splitbuffer.Length >= 4)
                 {
-                    if (Leayal.StringHelper.IsEqual(splitbuffer[3], "m", true))
+                    if (StringHelper.IsEqual(splitbuffer[3], "m", true))
                         _pso2file = new PSO2File(splitbuffer[0], splitbuffer[2], splitbuffer[1], baseUrl.MasterURL);
                     else
                         _pso2file = new PSO2File(splitbuffer[0], splitbuffer[2], splitbuffer[1], baseUrl.PatchURL);
@@ -81,9 +81,9 @@ namespace Leayal.PSO2.Updater
         public string MD5Hash { get; }
         public PSO2File(string _filename, string _length, string _md5, string _baseurl)
         {
-            this.Filename = trimPat(_filename);
+            this.Filename = TrimPat(_filename);
             this.OriginalFilename = _filename;
-            this.WindowFilename = switchToWindowsPath(this.Filename);
+            this.WindowFilename = SwitchToWindowsPath(this.Filename);
             this.SafeFilename = Path.GetFileName(this.Filename);
             long filelength;
             if (!long.TryParse(_length, out filelength))
@@ -94,7 +94,7 @@ namespace Leayal.PSO2.Updater
             //new PSO2FileUrl(Classes.Infos.CommonMethods.URLConcat(DefaultValues.Web.MainDownloadLink, _filename), Classes.Infos.CommonMethods.URLConcat(DefaultValues.Web.OldDownloadLink, _filename));
         }
 
-        private string switchToWindowsPath(string _path)
+        private static string SwitchToWindowsPath(string _path)
         {
             if (_path.IndexOf("//") > -1)
                 _path = _path.Replace("//", "/");
@@ -105,12 +105,10 @@ namespace Leayal.PSO2.Updater
             return _path;
         }
 
-        private string trimPat(string _path)
+        private static string TrimPat(string _path)
         {
             if (_path.EndsWith(DefaultValues.Web.FakeFileExtension, StringComparison.OrdinalIgnoreCase))
-            {
                 return _path.Substring(0, _path.Length - DefaultValues.Web.FakeFileExtension.Length);
-            }
             else
                 return _path;
         }

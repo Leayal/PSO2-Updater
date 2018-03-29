@@ -4,6 +4,7 @@ namespace Leayal.PSO2.Updater
 {
     internal static class DefaultValues
     {
+        // public static readonly int VirtualAllowedThreadCount = Math.Min(System.Environment.ProcessorCount, 4);
         public const string CensorFilename = "ffbff2ac5b7a7948961212cefd4d402c";
         public static class Directory
         {

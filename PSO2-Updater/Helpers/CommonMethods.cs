@@ -19,16 +19,8 @@ namespace Leayal.PSO2.Updater
             return false;
         }
 
-        private static string cache_DocumentWorkSpace, cache_VersionFilepath;
-        public static string DocumentWorkSpace
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(cache_DocumentWorkSpace))
-                    cache_DocumentWorkSpace = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SEGA", "PHANTASYSTARONLINE2");
-                return cache_DocumentWorkSpace;
-            }
-        }
+        private static string cache_VersionFilepath;
+        public static string DocumentWorkSpace => DefaultValues.Directory.DocumentWorkSpace;
 
         public static string VersionFilepath
         {

@@ -24,7 +24,7 @@ namespace Leayal.PSO2.Updater.ChecksumCache
             this.BaseStream = sourceStream;
         }
 
-        public Encoding Encoding => Encoding.UTF8;
+        public Encoding Encoding => Encoding.Unicode;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public string NewLine => Microsoft.VisualBasic.ControlChars.CrLf;
@@ -119,22 +119,10 @@ namespace Leayal.PSO2.Updater.ChecksumCache
 
         public override void Close()
         {
-            this.BaseStream.Close();
             this.buffer = null;
-            this.bufferWrapper.Close();
+            // Return the byte[] to the pool
+            this.bufferWrapper.Dispose();
             base.Close();
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                this.buffer = null;
-                this.BaseStream.Dispose();
-                // Return the byte[] to the pool
-                this.bufferWrapper.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }

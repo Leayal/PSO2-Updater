@@ -1,23 +1,20 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 
 #pragma warning disable 0809
 namespace Leayal.PSO2.Updater.ChecksumCache
 {
-    public class ChecksumCacheReader : StreamReader
+    class ChecksumCacheReader : StreamReader
     {
         private string currentline;
         private string[] tmpsplit;
         internal List<PSO2FileChecksum> result;
 
-        public ChecksumCacheReader(Stream sourceStream) : base(sourceStream, Encoding.UTF8)
-        {
-            
-        }
+        public ChecksumCacheReader(Stream sourceStream) : base(sourceStream, Encoding.Unicode)
+        { }
 
         [Obsolete("Please don't use this method. Use ReadLine instead.", true), EditorBrowsable(EditorBrowsableState.Never)]
         public override int Read(char[] buffer, int index, int count)

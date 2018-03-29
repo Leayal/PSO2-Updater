@@ -12,7 +12,7 @@ namespace Leayal.PSO2.Updater.ChecksumCache
                 using (FileStream fs = File.OpenRead(filepath))
                 {
                     len = fs.Length;
-                    result = Leayal.Security.Cryptography.MD5Wrapper.FromStream(fs);
+                    result = Leayal.Security.Cryptography.MD5Wrapper.HashFromStream(fs);
                 }
             if (Path.IsPathRooted(filepath))
                 return new PSO2FileChecksum(filepath.Remove(0, folder.Length), len, result);
