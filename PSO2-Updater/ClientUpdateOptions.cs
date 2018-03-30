@@ -20,11 +20,14 @@ namespace Leayal.PSO2.Updater
         public UpdaterProfile Profile { get; set; }
         public ChecksumCache.ChecksumCache ChecksumCache { get; set; }
         internal ParallelOptions ParallelOptions { get; set; }
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent tasks enabled by this System.Threading.Tasks.ParallelOptions instance.
+        /// </summary>
         public int MaxDegreeOfParallelism { get => this.ParallelOptions.MaxDegreeOfParallelism; set => this.ParallelOptions.MaxDegreeOfParallelism = value; }
 
         public void Dispose()
         {
-            this.ChecksumCache.Dispose();
+            this.ChecksumCache?.Dispose();
         }
     }
 }

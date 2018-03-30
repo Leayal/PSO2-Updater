@@ -18,6 +18,7 @@ using Leayal.PSO2.Updater;
 using System.Threading;
 using Leayal.PSO2.Updater.ChecksumCache;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 
 namespace PSO2_Updater_WPF
 {
@@ -34,6 +35,7 @@ namespace PSO2_Updater_WPF
         public MainWindow()
         {
             this.configReady = false;
+            this.exitconfirmed = false;
 
             Stream resStream = Leayal.AppInfo.EntryAssembly.GetManifestResourceStream("PSO2_Updater_WPF.icon.ico");
             if (resStream != null)
@@ -104,32 +106,62 @@ namespace PSO2_Updater_WPF
             this.configReady = true;
         }
 
+        private bool exitconfirmed;
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if (this.tab_Mainmenu.IsSelected || this.exitconfirmed)
+            {
+                base.OnClosing(e);
+                return;
+            }
+            e.Cancel = true;
+            this.synccontext.Post(new SendOrPostCallback(async delegate
+            {
+                if (await this.MsgBoxYesNo("Are you sure you want to cancel the current operation and exit the application?", "Confirmation", "Cancel operation", "Continue operation") == MessageDialogResult.Affirmative)
+                {
+                    this.exitconfirmed = true;
+                    this.updater.CancelDownloadOperations();
+                }
+            }), null);
+        }
+
         private void Updater_UpdateCompleted(Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs obj)
         {
-            this.synccontext.Post(new SendOrPostCallback(async (x) =>
+            if (this.exitconfirmed)
             {
-                this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
-                this.tab_Mainmenu.IsSelected = true;
-                Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs e = (Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs)x;
-                if (e.Cancelled)
+                this.synccontext.Post(new SendOrPostCallback(delegate
                 {
-                    if (e.FailedList.Count == 0)
-                        await this.MsgBoxOK($"Operation cancelled.", "Information");
-                    else if (e.FailedList.Count == 1)
-                        await this.MsgBoxOK($"Operation cancelled with 1 file had failed to be downloaded.", "Information");
-                    else
-                        await this.MsgBoxOK($"Operation cancelled with {e.FailedList.Count} files had failed to be downloaded.", "Information");
-                }
-                else
+                    this.Close();
+                }), null);
+            }
+            else
+            {
+                this.synccontext.Post(new SendOrPostCallback(async (x) =>
                 {
-                    if (e.FailedList.Count == 0)
-                        await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.", "Information");
-                    else if (e.FailedList.Count == 1)
-                        await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.\nHowever, there is 1 file had failed to be downloaded.", "Information");
+                    this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
+                    this.tab_Mainmenu.IsSelected = true;
+                    Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs e = (Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs)x;
+                    if (e.Cancelled)
+                    {
+                        if (e.FailedList.Count == 0)
+                            await this.MsgBoxOK($"Operation cancelled.", "Information");
+                        else if (e.FailedList.Count == 1)
+                            await this.MsgBoxOK($"Operation cancelled with 1 file had failed to be downloaded.", "Information");
+                        else
+                            await this.MsgBoxOK($"Operation cancelled with {e.FailedList.Count} files had failed to be downloaded.", "Information");
+                    }
                     else
-                        await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.\nHowever, there is {e.FailedList.Count} files had failed to be downloaded.", "Information");
-                }
-            }), obj);
+                    {
+                        if (e.FailedList.Count == 0)
+                            await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.", "Information");
+                        else if (e.FailedList.Count == 1)
+                            await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.\nHowever, there is 1 file had failed to be downloaded.", "Information");
+                        else
+                            await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.\nHowever, there is {e.FailedList.Count} files had failed to be downloaded.", "Information");
+                    }
+                }), obj);
+            }
         }
 
         string currentstep;
@@ -297,7 +329,7 @@ namespace PSO2_Updater_WPF
 
                 if (!File.Exists(Path.Combine(pso2dir, "pso2launcher.exe")) && !File.Exists(Path.Combine(pso2dir, "pso2.exe")))
                 {
-                    if (await this.MsgBoxYesNo("PSO2 Directory setting seems to not point to the 'pso2_dir' directory.\nAre you sure you still want to continue?", "Confirmation", "Yes, continue", "Nope") == MessageDialogResult.Negative)
+                    if (await this.MsgBoxYesNo("PSO2 Directory setting seems to not point to the 'pso2_dir' directory.\nAre you sure you still want to continue?", "Confirmation", "Yes, continue", "Nope") != MessageDialogResult.Affirmative)
                         return;
                 }
 
@@ -320,37 +352,78 @@ namespace PSO2_Updater_WPF
                 this.config.SetValue("PSO2", "Directory", pso2dir);
 
                 var version = await this.updater.GetPatchManagementAsync();
-                if (version.IsNewVersionFound)
+                if (!version.IsNewVersionFound)
                 {
                     if (await this.MsgBoxYesNo($"Found new PSO2 client version.\nLatest version: {version.LatestVersion}\nCurrent version: {version.CurrentVersion}\nDo you want to perform update?", "Question") == MessageDialogResult.Affirmative)
                     {
-                        ChecksumCache checksumCache = null;
-                        if ((usecache == true) && !string.IsNullOrWhiteSpace(cachePath))
+                        Action<ClientUpdateOptions> continueAction = (result) =>
                         {
-                            if (File.Exists(cachePath))
-                                checksumCache = ChecksumCache.OpenFromFile(cachePath);
-                            else
-                                checksumCache = ChecksumCache.Create(cachePath);
-                        }
-
-                        this.progressStep.Text = "Preparing patchlist";
-                        this.progressbar.IsIndeterminate = false;
-                        this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-                        if (this.downloadingfiles == null)
-                            this.downloadingfiles = new ConcurrentDictionary<string, bool>();
-                        else
-                            this.downloadingfiles.Clear();
-
-                        this.currentstep = "Downloading patchlists";
-                        await Task.Run(async () =>
-                        {
-                            RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version, PatchListType.Patch | PatchListType.LauncherList);
-                            this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, new ClientUpdateOptions()
+                            this.synccontext.Post(new SendOrPostCallback(delegate
                             {
-                                ChecksumCache = checksumCache,
+                                this.progressStep.Text = "Preparing patchlist";
+                                this.progressbar.IsIndeterminate = false;
+                                this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+                            }), null);
+                            if (this.downloadingfiles == null)
+                                this.downloadingfiles = new ConcurrentDictionary<string, bool>();
+                            else
+                                this.downloadingfiles.Clear();
+
+                            this.currentstep = "Downloading patchlists";
+                            Task.Run(async () =>
+                            {
+                                RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version, PatchListType.Patch | PatchListType.LauncherList);
+                                this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
+                            });
+                        };
+
+                        await Task.Run(() =>
+                        {
+                            ClientUpdateOptions options = new ClientUpdateOptions() {
                                 Profile = profile,
                                 MaxDegreeOfParallelism = threadcount
-                            });
+                            };
+                            if ((usecache == true) && !string.IsNullOrWhiteSpace(cachePath))
+                            {
+                                if (File.Exists(cachePath))
+                                {
+                                    try
+                                    {
+                                        var checksumCache = ChecksumCache.OpenFromFile(cachePath);
+                                        if (string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            this.synccontext.Post(new SendOrPostCallback(async delegate 
+                                            {
+                                                var answer = await this.MsgBoxYesNoCancel($"The cache you provided is for PSO2 client ver {checksumCache.PSO2Version} while your current client version is {version.CurrentVersion}. ?", "Question", "Skip cache", "Rebuild cache", "Cancel operation");
+                                                if (answer == MessageDialogResult.Affirmative)
+                                                    checksumCache.Dispose();
+                                                else if (answer == MessageDialogResult.Negative)
+                                                {
+                                                    if (options.Profile == Leayal.PSO2.Updater.UpdaterProfile.PreferSpeed)
+                                                        options.Profile = Leayal.PSO2.Updater.UpdaterProfile.Balanced;
+                                                    checksumCache.ChecksumList.Clear();
+                                                    options.ChecksumCache = checksumCache;
+                                                }
+                                                else
+                                                {
+                                                    checksumCache.Dispose();
+                                                    this.tab_Mainmenu.IsSelected = true;
+                                                    return;
+                                                }
+                                                continueAction.Invoke(options);
+                                            }), null);
+                                            return;
+                                        }
+                                    }
+                                    catch (InvalidCacheException)
+                                    {
+                                        options.ChecksumCache = ChecksumCache.Create(cachePath);
+                                    }
+                                }
+                                else
+                                    options.ChecksumCache = ChecksumCache.Create(cachePath);
+                            }
+                            continueAction.Invoke(options);
                         });
                     }
                     else
@@ -374,7 +447,7 @@ namespace PSO2_Updater_WPF
             catch (Exception ex)
             {
                 this.tab_Mainmenu.IsSelected = true;
-                await this.MsgBoxOK(ex.ToString(), "Error");
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -390,7 +463,7 @@ namespace PSO2_Updater_WPF
 
                 if (!File.Exists(Path.Combine(pso2dir, "pso2launcher.exe")) && !File.Exists(Path.Combine(pso2dir, "pso2.exe")))
                 {
-                    if (await this.MsgBoxYesNo("PSO2 Directory setting seems to not point to the 'pso2_dir' directory.\nAre you sure you still want to continue?", "Confirmation", "Yes, continue", "Nope") == MessageDialogResult.Negative)
+                    if (await this.MsgBoxYesNo("PSO2 Directory setting seems to not point to the 'pso2_dir' directory.\nAre you sure you still want to continue?", "Confirmation", "Yes, continue", "Nope") != MessageDialogResult.Affirmative)
                         return;
                 }
 
@@ -415,34 +488,75 @@ namespace PSO2_Updater_WPF
                     this.config.SetValue("PSO2", "Directory", pso2dir);
 
                     var version = await this.updater.GetPatchManagementAsync();
-                    ChecksumCache checksumCache = null;
-                    if ((usecache == true) && !string.IsNullOrWhiteSpace(cachePath))
+                    Action<ClientUpdateOptions> continueAction = (result) =>
                     {
-                        if (File.Exists(cachePath))
-                            try { checksumCache = ChecksumCache.OpenFromFile(cachePath); }
-                            catch (InvalidCacheException) { checksumCache = ChecksumCache.Create(cachePath); }
-                        else
-                            checksumCache = ChecksumCache.Create(cachePath);
-                    }
-
-                    this.progressStep.Text = "Preparing patchlist";
-                    this.progressbar.IsIndeterminate = false;
-                    this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-                    if (this.downloadingfiles == null)
-                        this.downloadingfiles = new ConcurrentDictionary<string, bool>();
-                    else
-                        this.downloadingfiles.Clear();
-
-                    this.currentstep = "Downloading patchlists";
-                    await Task.Run(async () =>
-                    {
-                        RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version);
-                        this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, new ClientUpdateOptions()
+                        this.synccontext.Post(new SendOrPostCallback(delegate
                         {
-                            ChecksumCache = checksumCache,
+                            this.progressStep.Text = "Preparing patchlist";
+                            this.progressbar.IsIndeterminate = false;
+                            this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+                        }), null);
+                        if (this.downloadingfiles == null)
+                            this.downloadingfiles = new ConcurrentDictionary<string, bool>();
+                        else
+                            this.downloadingfiles.Clear();
+
+                        this.currentstep = "Downloading patchlists";
+                        Task.Run(async () =>
+                        {
+                            RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version);
+                            this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
+                        });
+                    };
+
+                    await Task.Run(() =>
+                    {
+                        ClientUpdateOptions options = new ClientUpdateOptions()
+                        {
                             Profile = profile,
                             MaxDegreeOfParallelism = threadcount
-                        });
+                        };
+                        if ((usecache == true) && !string.IsNullOrWhiteSpace(cachePath))
+                        {
+                            if (File.Exists(cachePath))
+                            {
+                                try
+                                {
+                                    var checksumCache = ChecksumCache.OpenFromFile(cachePath);
+                                    if (string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        this.synccontext.Post(new SendOrPostCallback(async delegate
+                                        {
+                                            var answer = await this.MsgBoxYesNoCancel($"The cache you provided is for PSO2 client ver {checksumCache.PSO2Version} while your current client version is {version.CurrentVersion}. ?", "Question", "Skip cache", "Rebuild cache", "Cancel operation");
+                                            if (answer == MessageDialogResult.Affirmative)
+                                                checksumCache.Dispose();
+                                            else if (answer == MessageDialogResult.Negative)
+                                            {
+                                                if (options.Profile == Leayal.PSO2.Updater.UpdaterProfile.PreferSpeed)
+                                                    options.Profile = Leayal.PSO2.Updater.UpdaterProfile.Balanced;
+                                                checksumCache.ChecksumList.Clear();
+                                                options.ChecksumCache = checksumCache;
+                                            }
+                                            else
+                                            {
+                                                checksumCache.Dispose();
+                                                this.tab_Mainmenu.IsSelected = true;
+                                                return;
+                                            }
+                                            continueAction.Invoke(options);
+                                        }), null);
+                                        return;
+                                    }
+                                }
+                                catch (InvalidCacheException)
+                                {
+                                    options.ChecksumCache = ChecksumCache.Create(cachePath);
+                                }
+                            }
+                            else
+                                options.ChecksumCache = ChecksumCache.Create(cachePath);
+                        }
+                        continueAction.Invoke(options);
                     });
                 }
                 else
@@ -460,7 +574,7 @@ namespace PSO2_Updater_WPF
             catch (Exception ex)
             {
                 this.tab_Mainmenu.IsSelected = true;
-                await this.MsgBoxOK(ex.ToString(), "Error");
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -475,9 +589,12 @@ namespace PSO2_Updater_WPF
             public WrappedWarningException(string message) : base(message) { }
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            this.updater.CancelDownloadOperations();
+            if (await this.MsgBoxYesNo("Are you sure you want to cancel the current operation?", "Confirmation", "Cancel operation", "Continue operation") == MessageDialogResult.Affirmative)
+            {
+                this.updater.CancelDownloadOperations();
+            }
         }
 
         private Task<MessageDialogResult> MsgBoxYesNo(string text, string title)
@@ -487,7 +604,12 @@ namespace PSO2_Updater_WPF
 
         private Task<MessageDialogResult> MsgBoxYesNo(string text, string title, string affirmativeText, string negativeText)
         {
-            return DialogManager.ShowMessageAsync(this, title, text, MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = affirmativeText, AnimateHide = true, AnimateShow = true, NegativeButtonText = negativeText });
+            return DialogManager.ShowMessageAsync(this, title, text, MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = affirmativeText, AnimateHide = true, AnimateShow = true, NegativeButtonText = negativeText, DialogResultOnCancel = MessageDialogResult.Negative });
+        }
+
+        private Task<MessageDialogResult> MsgBoxYesNoCancel(string text, string title, string affirmativeText, string negativeText, string cancelText)
+        {
+            return DialogManager.ShowMessageAsync(this, title, text, MessageDialogStyle.AffirmativeAndNegativeAndSingleAuxiliary, new MetroDialogSettings() { AffirmativeButtonText = affirmativeText, AnimateHide = true, AnimateShow = true, NegativeButtonText = negativeText, FirstAuxiliaryButtonText = cancelText, DialogResultOnCancel = MessageDialogResult.FirstAuxiliary });
         }
 
         private Task<MessageDialogResult> MsgBoxOK(string text, string title)

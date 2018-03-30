@@ -303,8 +303,8 @@ namespace Leayal.PSO2.Updater
                 {
                     this.StepChanged?.Invoke(UpdateStep.WriteCache, options.ChecksumCache);
                     options.ChecksumCache.WriteChecksumCache(version.LatestVersion);
-                    options.ChecksumCache.Dispose();
                 }
+                options.Dispose();
                 this.UpdateCompleted?.Invoke(new PSO2NotifyEventArgs(true, clientDirectory, new ReadOnlyDictionary<PSO2File, Exception>(failedfiles)));
             });
             //*/
@@ -686,8 +686,8 @@ namespace Leayal.PSO2.Updater
                 {
                     this.StepChanged?.Invoke(UpdateStep.WriteCache, options.ChecksumCache);
                     options.ChecksumCache.WriteChecksumCache(version.LatestVersion);
-                    options.ChecksumCache.Dispose();
                 }
+                options.Dispose();
                 if (!totalCancelSource.IsCancellationRequested)
                 {
                     if (failedfiles.Count < 4)
@@ -704,8 +704,8 @@ namespace Leayal.PSO2.Updater
                 {
                     this.StepChanged?.Invoke(UpdateStep.WriteCache, options.ChecksumCache);
                     options.ChecksumCache.WriteChecksumCache(version.LatestVersion);
-                    options.ChecksumCache.Dispose();
                 }
+                options.Dispose();
                 throw ex;
             }
         }
