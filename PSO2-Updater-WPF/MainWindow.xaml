@@ -7,7 +7,7 @@
                       xmlns:Converters="clr-namespace:PSO2_Updater_WPF.Classes"
                       xmlns:local="clr-namespace:PSO2_Updater_WPF"
                       mc:Ignorable="d"
-                      Title="PSO2 Updater" Height="190" Width="640" GlowBrush="#FFFD4949" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" IsMaxRestoreButtonEnabled="False" ShowMaxRestoreButton="False" SizeToContent="Height">
+                      Title="PSO2 Updater" Height="220" Width="640" MaxWidth="720" GlowBrush="#FFFD4949" ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen" IsMaxRestoreButtonEnabled="False" ShowMaxRestoreButton="False" SizeToContent="WidthAndHeight">
     <Window.Resources>
         <ResourceDictionary>
             <Converters:PercentStringFormatConverter x:Key="percentStringFormatConverter"/>
@@ -80,7 +80,7 @@
                     <RowDefinition/>
                 </Grid.RowDefinitions>
 
-                <TextBlock x:Name="progressStep" Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Text="Preparing" TextWrapping="Wrap" />
+                <TextBlock x:Name="progressStep" Grid.Row="0" TextAlignment="Center" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Text="Preparing" TextWrapping="Wrap" />
                 <Grid Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Stretch">
                     <Controls:MetroProgressBar  x:Name="progressbar" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="15" />
                     <Label Visibility="{Binding Path=IsIndeterminate,ElementName=progressbar,Mode=OneWay,Converter={StaticResource reverseBoolToVisibilityFormatConverter}}" HorizontalContentAlignment="Center" VerticalAlignment="Center" Content="{Binding Path=Value,ElementName=progressbar,Mode=OneWay,StringFormat=P,Converter={StaticResource percentStringFormatConverter}}"/>

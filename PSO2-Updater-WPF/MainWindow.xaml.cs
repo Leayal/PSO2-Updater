@@ -352,7 +352,7 @@ namespace PSO2_Updater_WPF
                 this.config.SetValue("PSO2", "Directory", pso2dir);
 
                 var version = await this.updater.GetPatchManagementAsync();
-                if (!version.IsNewVersionFound)
+                if (version.IsNewVersionFound)
                 {
                     if (await this.MsgBoxYesNo($"Found new PSO2 client version.\nLatest version: {version.LatestVersion}\nCurrent version: {version.CurrentVersion}\nDo you want to perform update?", "Question") == MessageDialogResult.Affirmative)
                     {
