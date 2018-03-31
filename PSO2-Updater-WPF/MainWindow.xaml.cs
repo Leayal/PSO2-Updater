@@ -390,7 +390,7 @@ namespace PSO2_Updater_WPF
                                     try
                                     {
                                         var checksumCache = ChecksumCache.OpenFromFile(cachePath);
-                                        if (string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
+                                        if (!string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
                                         {
                                             this.synccontext.Post(new SendOrPostCallback(async delegate 
                                             {
@@ -523,7 +523,7 @@ namespace PSO2_Updater_WPF
                                 try
                                 {
                                     var checksumCache = ChecksumCache.OpenFromFile(cachePath);
-                                    if (string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
+                                    if (!string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
                                     {
                                         this.synccontext.Post(new SendOrPostCallback(async delegate
                                         {
