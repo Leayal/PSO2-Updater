@@ -19,6 +19,7 @@ using System.Threading;
 using Leayal.PSO2.Updater.ChecksumCache;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Windows.Threading;
 
 namespace PSO2_Updater_WPF
 {
@@ -29,7 +30,6 @@ namespace PSO2_Updater_WPF
     {
         private SimpleINI config;
         private bool configReady;
-        private SynchronizationContext synccontext;
         private ClientUpdater updater;
 
         public MainWindow()
@@ -51,7 +51,6 @@ namespace PSO2_Updater_WPF
 
             InitializeComponent();
 
-            this.synccontext = SynchronizationContext.Current;
             this.config = new SimpleINI(Path.Combine(Leayal.AppInfo.EntryAssemblyInfo.DirectoryPath, "config.ini"));
             int totalthreads = Environment.ProcessorCount;
             if (totalthreads == 1)
@@ -107,6 +106,8 @@ namespace PSO2_Updater_WPF
         }
 
         private bool exitconfirmed;
+        private delegate void JustAction();
+        private delegate void JustActionOneArg(object obj);
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -116,28 +117,28 @@ namespace PSO2_Updater_WPF
                 return;
             }
             e.Cancel = true;
-            this.synccontext.Post(new SendOrPostCallback(async delegate
+            this.Dispatcher.BeginInvoke(new JustAction(async () => 
             {
                 if (await this.MsgBoxYesNo("Are you sure you want to cancel the current operation and exit the application?", "Confirmation", "Cancel operation", "Continue operation") == MessageDialogResult.Affirmative)
                 {
                     this.exitconfirmed = true;
                     this.updater.CancelDownloadOperations();
                 }
-            }), null);
+            }), DispatcherPriority.Normal, null);
         }
 
         private void Updater_UpdateCompleted(Leayal.PSO2.Updater.Events.PSO2NotifyEventArgs obj)
         {
             if (this.exitconfirmed)
             {
-                this.synccontext.Post(new SendOrPostCallback(delegate
+                this.Dispatcher.BeginInvoke(new JustAction(() =>
                 {
                     this.Close();
-                }), null);
+                }), DispatcherPriority.Normal, null);
             }
             else
             {
-                this.synccontext.Post(new SendOrPostCallback(async (x) =>
+                this.Dispatcher.BeginInvoke(new JustActionOneArg(async (x) =>
                 {
                     this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
                     this.tab_Mainmenu.IsSelected = true;
@@ -160,7 +161,7 @@ namespace PSO2_Updater_WPF
                         else
                             await this.MsgBoxOK($"Your PSO2 client has been verified and updated to version '{e.NewClientVersion}'.\nHowever, there is {e.FailedList.Count} files had failed to be downloaded.", "Information");
                     }
-                }), obj);
+                }), DispatcherPriority.Normal, obj);
             }
         }
 
@@ -177,7 +178,10 @@ namespace PSO2_Updater_WPF
                         this.downloadingfiles.TryAdd(file.SafeFilename, true);
                         if (this.downloadingfiles.Count == 1)
                         {
-                            this.synccontext.Post(new SendOrPostCallback((x) => { this.downloadingStep.Text = $"Downloading:\n{x}"; }), this.downloadingfiles.First().Key);
+                            this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
+                            {
+                                this.downloadingStep.Text = $"Downloading:\n{x}";
+                            }), DispatcherPriority.Normal, this.downloadingfiles.First().Key);
                         }
                         else
                         {
@@ -188,7 +192,10 @@ namespace PSO2_Updater_WPF
                                 sb.Append("\n");
                                 sb.Append(filename);
                             }
-                            this.synccontext.Post(new SendOrPostCallback(delegate { this.downloadingStep.Text = sb.ToString(); }), null);
+                            this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
+                            {
+                                this.downloadingStep.Text = (string)x;
+                            }), DispatcherPriority.Normal, sb.ToString());
                         }
                     }
                     break;
@@ -197,10 +204,17 @@ namespace PSO2_Updater_WPF
                     {
                         this.downloadingfiles.TryRemove(file2.SafeFilename, out var somebool);
                         if (this.downloadingfiles.Count == 0)
-                            this.synccontext.Post(new SendOrPostCallback(delegate { this.downloadingStep.Text = string.Empty; }), null);
+                            this.Dispatcher.BeginInvoke(new JustAction(() =>
+                            {
+                                this.downloadingStep.Text = string.Empty;
+                            }), DispatcherPriority.Normal, null);
                         else if (this.downloadingfiles.Count == 1)
                         {
-                            this.synccontext.Post(new SendOrPostCallback((x) => { this.downloadingStep.Text = $"Downloading:\n{x}"; }), this.downloadingfiles.First().Key);
+                            string va = this.downloadingfiles.First().Key;
+                            this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
+                            {
+                                this.downloadingStep.Text = $"Downloading:\n{x}";
+                            }), DispatcherPriority.Normal, this.downloadingfiles.First().Key);
                         }
                         else
                         {
@@ -211,7 +225,10 @@ namespace PSO2_Updater_WPF
                                 sb.Append("\n");
                                 sb.Append(filename);
                             }
-                            this.synccontext.Post(new SendOrPostCallback(delegate { this.downloadingStep.Text = sb.ToString(); }), null);
+                            this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
+                            {
+                                this.downloadingStep.Text = (string)x;
+                            }), DispatcherPriority.Normal, sb.ToString());
                         }
                     }
                     break;
@@ -219,7 +236,7 @@ namespace PSO2_Updater_WPF
                     this.currentstep = "Verifying files";
                     break;
                 case UpdateStep.WriteCache:
-                    this.synccontext.Post(new SendOrPostCallback((x) =>
+                    this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
                     {
                         ChecksumCache cache = x as ChecksumCache;
                         if (cache != null)
@@ -229,24 +246,24 @@ namespace PSO2_Updater_WPF
                             else
                                 this.progressStep.Text = $"Writing {cache.ChecksumList.Count} entries to the cache file.";
                         }
-                    }), arg2);
+                    }), DispatcherPriority.Normal, arg2);
                     break;
             }
         }
 
         private void Updater_ProgressChanged(int arg1, int arg2)
         {
-            this.synccontext.Post(new SendOrPostCallback(delegate
+            if (arg2 != 0)
             {
-                if (arg2 != 0)
+                this.Dispatcher.BeginInvoke(new JustActionOneArg((x) =>
                 {
-                    double val = (double)arg1 / arg2;
+                    double val = (double)x;
                     this.progressbar.Value = Math.Floor(val * 100);
                     this.TaskbarItemInfo.ProgressValue = val;
 
                     this.progressStep.Text = $"{this.currentstep} ({arg1}/{arg2})";
-                }
-            }), null);
+                }), DispatcherPriority.Normal, (double)arg1 / arg2);
+            }
         }
 
         private void AddThreadsOptionsWithRecommendation(int totalthreads, int recommend)
@@ -358,12 +375,12 @@ namespace PSO2_Updater_WPF
                     {
                         Action<ClientUpdateOptions> continueAction = (result) =>
                         {
-                            this.synccontext.Post(new SendOrPostCallback(delegate
+                            this.Dispatcher.BeginInvoke(new JustAction(() =>
                             {
                                 this.progressStep.Text = "Preparing patchlist";
                                 this.progressbar.IsIndeterminate = false;
                                 this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-                            }), null);
+                            }), DispatcherPriority.Normal, null);
                             if (this.downloadingfiles == null)
                                 this.downloadingfiles = new ConcurrentDictionary<string, bool>();
                             else
@@ -392,7 +409,7 @@ namespace PSO2_Updater_WPF
                                         var checksumCache = ChecksumCache.OpenFromFile(cachePath);
                                         if (!string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
                                         {
-                                            this.synccontext.Post(new SendOrPostCallback(async delegate 
+                                            this.Dispatcher.BeginInvoke(new JustAction(async () =>
                                             {
                                                 var answer = await this.MsgBoxYesNoCancel($"The cache you provided is for PSO2 client ver {checksumCache.PSO2Version} while your current client version is {version.CurrentVersion}. ?", "Question", "Skip cache", "Rebuild cache", "Cancel operation");
                                                 if (answer == MessageDialogResult.Affirmative)
@@ -411,8 +428,12 @@ namespace PSO2_Updater_WPF
                                                     return;
                                                 }
                                                 continueAction.Invoke(options);
-                                            }), null);
+                                            }), DispatcherPriority.Normal, null);
                                             return;
+                                        }
+                                        else
+                                        {
+                                            options.ChecksumCache = checksumCache;
                                         }
                                     }
                                     catch (InvalidCacheException)
@@ -490,12 +511,12 @@ namespace PSO2_Updater_WPF
                     var version = await this.updater.GetPatchManagementAsync();
                     Action<ClientUpdateOptions> continueAction = (result) =>
                     {
-                        this.synccontext.Post(new SendOrPostCallback(delegate
+                        this.Dispatcher.BeginInvoke(new JustAction(() =>
                         {
                             this.progressStep.Text = "Preparing patchlist";
                             this.progressbar.IsIndeterminate = false;
                             this.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-                        }), null);
+                        }), DispatcherPriority.Normal, null);
                         if (this.downloadingfiles == null)
                             this.downloadingfiles = new ConcurrentDictionary<string, bool>();
                         else
@@ -525,7 +546,7 @@ namespace PSO2_Updater_WPF
                                     var checksumCache = ChecksumCache.OpenFromFile(cachePath);
                                     if (!string.Equals(checksumCache.PSO2Version, version.CurrentVersion, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        this.synccontext.Post(new SendOrPostCallback(async delegate
+                                        this.Dispatcher.BeginInvoke(new JustAction(async () => 
                                         {
                                             var answer = await this.MsgBoxYesNoCancel($"The cache you provided is for PSO2 client ver {checksumCache.PSO2Version} while your current client version is {version.CurrentVersion}. ?", "Question", "Skip cache", "Rebuild cache", "Cancel operation");
                                             if (answer == MessageDialogResult.Affirmative)
@@ -544,8 +565,12 @@ namespace PSO2_Updater_WPF
                                                 return;
                                             }
                                             continueAction.Invoke(options);
-                                        }), null);
+                                        }), DispatcherPriority.Normal, null);
                                         return;
+                                    }
+                                    else
+                                    {
+                                        options.ChecksumCache = checksumCache;
                                     }
                                 }
                                 catch (InvalidCacheException)

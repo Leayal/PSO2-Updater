@@ -251,6 +251,8 @@ namespace Leayal.PSO2.Updater.ChecksumCache
                 ccw.WriteEntries(this.myCheckSumList.Values);
             }
             this.fs.Flush();
+            long currentpost = this.fs.Position;
+            this.fs.SetLength(currentpost);
 
             this._PSO2Version = pso2version;
         }
