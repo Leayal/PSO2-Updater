@@ -390,7 +390,7 @@ namespace PSO2_Updater_WPF
                             Task.Run(async () =>
                             {
                                 RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version, PatchListType.Patch | PatchListType.LauncherList);
-                                this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
+                                await this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
                             });
                         };
 
@@ -526,7 +526,7 @@ namespace PSO2_Updater_WPF
                         Task.Run(async () =>
                         {
                             RemotePatchlist patchlist = await this.updater.GetPatchlistAsync(version);
-                            this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
+                            await this.updater.VerifyAndDownloadAsync(pso2dir, version, patchlist, result);
                         });
                     };
 

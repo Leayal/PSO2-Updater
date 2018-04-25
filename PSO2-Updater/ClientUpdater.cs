@@ -276,8 +276,10 @@ namespace Leayal.PSO2.Updater
         /// <returns></returns>
         public async Task UpdateClientAsync(string clientDirectory, ClientVersionCheckResult version, ClientUpdateOptions options)
         {
-            RemotePatchlist patchlist = await this.GetPatchlistAsync(version);
-            this.VerifyAndDownloadAsync(clientDirectory, version, patchlist, options);
+            await this.GetPatchlistAsync(version).ContinueWith(async (t) =>
+            {
+                await this.VerifyAndDownloadAsync(clientDirectory, version, t.Result, options);
+            });
         }
 
         /// <summary>
@@ -287,7 +289,7 @@ namespace Leayal.PSO2.Updater
         /// <param name="version">Specify the version</param>
         /// <param name="filelist">Specify the patchlist to check and download</param>
         /// <param name="options">Provide the options for current download sessions</param>
-        public void VerifyAndDownloadAsync(string clientDirectory, ClientVersionCheckResult version, RemotePatchlist filelist, ClientUpdateOptions options)
+        public async Task VerifyAndDownloadAsync(string clientDirectory, ClientVersionCheckResult version, RemotePatchlist filelist, ClientUpdateOptions options)
         {
             ConcurrentDictionary<PSO2File, Exception> failedfiles = new ConcurrentDictionary<PSO2File, Exception>();
 
@@ -317,15 +319,17 @@ namespace Leayal.PSO2.Updater
                 options.Profile = UpdaterProfile.PreferAccuracy;
             else
                 options.ChecksumCache.ReadChecksumCache();
-            try
+
+            ConcurrentBag<PSO2File> pso2fileBag = new ConcurrentBag<PSO2File>(filelist.Values);
+            Func<Task> actionV;
+            switch (options.Profile)
             {
-                switch (options.Profile)
-                {
-                    case UpdaterProfile.PreferAccuracy:
-                        Parallel.ForEach(filelist.Values, options.ParallelOptions, (pso2file, state) =>
+                case UpdaterProfile.PreferAccuracy:
+                    actionV = new Func<Task>(async () =>
+                    {
+                        PSO2File pso2file;
+                        while (!totalCancelSource.IsCancellationRequested && pso2fileBag.TryTake(out pso2file))
                         {
-                            if (totalCancelSource.IsCancellationRequested)
-                                state.Stop();
                             string fullpath = Path.Combine(clientDirectory, pso2file.WindowFilename);
                             try
                             {
@@ -338,7 +342,7 @@ namespace Leayal.PSO2.Updater
                                         {
                                             this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
                                             using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                                try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                             File.Delete(fullpath);
                                             File.Move(fullpath + ".dtmp", fullpath);
                                             Interlocked.Increment(ref downloadedfiles);
@@ -370,7 +374,7 @@ namespace Leayal.PSO2.Updater
                                                 this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
 
                                                 using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                                    try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                    try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                                 File.Delete(fullpath);
                                                 File.Move(fullpath + ".dtmp", fullpath);
                                                 Interlocked.Increment(ref downloadedfiles);
@@ -404,7 +408,7 @@ namespace Leayal.PSO2.Updater
                                             this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
 
                                             using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                                try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                             File.Delete(fullpath);
                                             File.Move(fullpath + ".dtmp", fullpath);
                                             Interlocked.Increment(ref downloadedfiles);
@@ -430,7 +434,7 @@ namespace Leayal.PSO2.Updater
                                         this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
 
                                         using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                            try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                            try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                         File.Delete(fullpath);
                                         File.Move(fullpath + ".dtmp", fullpath);
                                         Interlocked.Increment(ref downloadedfiles);
@@ -455,13 +459,15 @@ namespace Leayal.PSO2.Updater
                                 Interlocked.Increment(ref currentprogress);
                                 this.ProgressChanged?.Invoke(currentprogress, filelist.Count);
                             }
-                        });
-                        break;
-                    case UpdaterProfile.PreferSpeed:
-                        Parallel.ForEach(filelist.Values, options.ParallelOptions, (pso2file, state) =>
+                        }
+                    });
+                    break;
+                case UpdaterProfile.PreferSpeed:
+                    actionV = new Func<Task>(async () =>
+                    {
+                        PSO2File pso2file;
+                        while (!totalCancelSource.IsCancellationRequested && pso2fileBag.TryTake(out pso2file))
                         {
-                            if (totalCancelSource.IsCancellationRequested)
-                                state.Stop();
                             string fullpath = Path.Combine(clientDirectory, pso2file.WindowFilename);
                             try
                             {
@@ -474,7 +480,7 @@ namespace Leayal.PSO2.Updater
                                             this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
 
                                             using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                                try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                             File.Delete(fullpath);
                                             File.Move(fullpath + ".dtmp", fullpath);
                                             Interlocked.Increment(ref downloadedfiles);
@@ -489,7 +495,7 @@ namespace Leayal.PSO2.Updater
                                         this.StepChanged?.Invoke(UpdateStep.DownloadingFileStart, pso2file);
 
                                         using (FileStream fs = File.Create(fullpath + ".dtmp"))
-                                            try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                            try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                         File.Delete(fullpath);
                                         File.Move(fullpath + ".dtmp", fullpath);
                                         Interlocked.Increment(ref downloadedfiles);
@@ -512,13 +518,15 @@ namespace Leayal.PSO2.Updater
                                 Interlocked.Increment(ref currentprogress);
                                 this.ProgressChanged?.Invoke(currentprogress, filelist.Count);
                             }
-                        });
-                        break;
-                    default:
-                        Parallel.ForEach(filelist.Values, options.ParallelOptions, (pso2file, state) =>
+                        }
+                    });
+                    break;
+                default:
+                    actionV = new Func<Task>(async () =>
+                    {
+                        PSO2File pso2file;
+                        while (!totalCancelSource.IsCancellationRequested && pso2fileBag.TryTake(out pso2file))
                         {
-                            if (totalCancelSource.IsCancellationRequested)
-                                state.Stop();
                             string fullpath = Path.Combine(clientDirectory, pso2file.WindowFilename);
                             try
                             {
@@ -543,7 +551,7 @@ namespace Leayal.PSO2.Updater
 
                                             using (FileStream fs = File.Create(fullpath + ".dtmp"))
                                             {
-                                                try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                                 ChecksumCache.PSO2FileChecksum newchecksum = new ChecksumCache.PSO2FileChecksum(pso2file.Filename, fs.Length, pso2file.MD5Hash);
                                                 options.ChecksumCache.ChecksumList.AddOrUpdate(pso2file.Filename, newchecksum, new Func<string, ChecksumCache.PSO2FileChecksum, ChecksumCache.PSO2FileChecksum>((key, oldval) => { return newchecksum; }));
                                             }
@@ -585,7 +593,7 @@ namespace Leayal.PSO2.Updater
 
                                                 using (FileStream fs = File.Create(fullpath + ".dtmp"))
                                                 {
-                                                    try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                    try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                                     ChecksumCache.PSO2FileChecksum newchecksum = new ChecksumCache.PSO2FileChecksum(pso2file.Filename, fs.Length, pso2file.MD5Hash);
                                                     options.ChecksumCache.ChecksumList.AddOrUpdate(pso2file.Filename, newchecksum, new Func<string, ChecksumCache.PSO2FileChecksum, ChecksumCache.PSO2FileChecksum>((key, oldval) => { return newchecksum; }));
                                                 }
@@ -628,7 +636,7 @@ namespace Leayal.PSO2.Updater
 
                                             using (FileStream fs = File.Create(fullpath + ".dtmp"))
                                             {
-                                                try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                                try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                                 ChecksumCache.PSO2FileChecksum newchecksum = new ChecksumCache.PSO2FileChecksum(pso2file.Filename, fs.Length, pso2file.MD5Hash);
                                                 options.ChecksumCache.ChecksumList.AddOrUpdate(pso2file.Filename, newchecksum, new Func<string, ChecksumCache.PSO2FileChecksum, ChecksumCache.PSO2FileChecksum>((key, oldval) => { return newchecksum; }));
                                             }
@@ -654,7 +662,7 @@ namespace Leayal.PSO2.Updater
 
                                         using (FileStream fs = File.Create(fullpath + ".dtmp"))
                                         {
-                                            try { this.DownloadFileAsync(pso2file, fs, totalCancelSource).GetAwaiter().GetResult(); } catch (TaskCanceledException) { }
+                                            try { await this.DownloadFileAsync(pso2file, fs, totalCancelSource); } catch (TaskCanceledException) { }
                                             ChecksumCache.PSO2FileChecksum newchecksum = new ChecksumCache.PSO2FileChecksum(pso2file.Filename, fs.Length, pso2file.MD5Hash);
                                             options.ChecksumCache.ChecksumList.AddOrUpdate(pso2file.Filename, newchecksum, new Func<string, ChecksumCache.PSO2FileChecksum, ChecksumCache.PSO2FileChecksum>((key, oldval) => { return newchecksum; }));
                                         }
@@ -678,9 +686,17 @@ namespace Leayal.PSO2.Updater
                                 Interlocked.Increment(ref currentprogress);
                                 this.ProgressChanged?.Invoke(currentprogress, filelist.Count);
                             }
-                        });
-                        break;
-                }
+                        }
+                    });
+                    break;
+            }
+
+            try
+            {
+                Task[] tasks = new Task[options.ParallelOptions.MaxDegreeOfParallelism];
+                for (int i = 0; i < tasks.Length; i++)
+                    tasks[i] = Task.Factory.StartNew(actionV, TaskCreationOptions.LongRunning).Unwrap();
+                await Task.WhenAll(tasks);
 
                 if (options.ChecksumCache != null && downloadedfiles > 0)
                 {
@@ -698,7 +714,7 @@ namespace Leayal.PSO2.Updater
                     this.UpdateCompleted?.Invoke(new PSO2NotifyEventArgs(true, clientDirectory, new ReadOnlyDictionary<PSO2File, Exception>(failedfiles)));
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (options.ChecksumCache != null && downloadedfiles > 0)
                 {
@@ -706,7 +722,7 @@ namespace Leayal.PSO2.Updater
                     options.ChecksumCache.WriteChecksumCache(version.LatestVersion);
                 }
                 options.Dispose();
-                throw ex;
+                throw;
             }
         }
 
